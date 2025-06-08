@@ -1,0 +1,219 @@
+{
+  "name": "Financial Agent",
+  "nodes": [
+    {
+      "parameters": {
+        "public": true,
+        "initialMessages": "Hi , I am a Finance agent , I can provide info on crypto and stock market trends , price and other statistics .",
+        "options": {
+          "customCss": "=:root {\n  /* ...existing variables unchanged... */\n}\n\n/* Modernize message bubbles */\n.chat-message {\n  max-width: 65%;\n  padding: 10px;\n  border-radius: 1rem;\n  line-height: var(--chat--message-line-height);\n  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);\n  transition: background 0.3s ease;\n  font-size: 20px; /* Reduced text size (14px approx) */\n}\n\n\n/* Bot message style */\n.chat-message.bot {\n  background: linear-gradient(145deg, var(--chat--color-light), var(--chat--color-white));\n  color: var(--chat--message--bot--color);\n}\n\n/* User message style */\n.chat-message.user {\n  background: linear-gradient(145deg, var(--chat--color-secondary), var(--chat--color-secondary-shade-50));\n  color: var(--chat--message--user--color);\n  align-self: flex-end;\n}\n\n/* Slight glow on hover for interactivity */\n.chat-message:hover {\n  filter: brightness(1.03);\n}\n\n/* Improve text rendering and appearance */\nbody, input, textarea {\n  -webkit-font-smoothing: antialiased;\n  -moz-osx-font-smoothing: grayscale;\n  font-feature-settings: \"liga\", \"kern\";\n}\n\n/* Chat window enhancements */\n.chat-window {\n  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);\n  border-radius: var(--chat--window--border-radius);\n  overflow: hidden;\n  background: var(--chat--body--background);\n}\n\n\n\n/* Input area soft border + shadow */\n.chat-input-area {\n  background: var(--chat--footer--background);\n  padding: var(--chat--spacing);\n  border-top: 1px solid var(--chat--color-light-shade-50);\n  box-shadow: inset 0 1px 2px rgba(0,0,0,0.05);\n}\n\n/* Smooth button hover effects */\nbutton:hover {\n  filter: brightness(1.05);\n  transition: all 0.2s ease-in-out;\n}\n\n/* Toggle button glow on hover */\n.chat-toggle:hover {\n  box-shadow: 0 0 0 4px rgba(231, 66, 102, 0.15);\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.chatTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -1780,
+        -80
+      ],
+      "id": "9176bd55-99fc-419b-8676-eea4db4c13c0",
+      "name": "When chat message received",
+      "webhookId": "1f760966-d769-4be7-a07f-25f472dbc97f"
+    },
+    {
+      "parameters": {
+        "options": {
+          "systemMessage": "A personable, insightful assistant who explains crypto, stock, and market topics in a relatable, easy-to-understand way.\n\nInstructions:\n\nAlways speak in a warm, casual, and human-like tone—like a smart friend who follows the markets closely. Avoid technical jargon unless necessary, and explain things clearly.\n\nWhen sharing numbers (e.g., prices, percentages, changes), always round to the nearest whole number. Never use decimals or float values.\n\nDon’t just state facts—offer quick insights, possible reasons, or relatable context.\nExample: Instead of “Bitcoin is up 2.38%,” say “Bitcoin’s had a solid bump—up around 2%, probably thanks to growing ETF hype.”\n\nUse phrases like:\n“Looks like…”\n“What’s interesting here is…”\n“Could be a reaction to…”\n“Worth keeping an eye on…”\n\nBe honest if something’s uncertain. Say what users might want to watch for next or suggest a practical action (e.g., “Might be a good idea to wait for tomorrow’s CPI numbers.”)\n\nStay current and relevant—focus on what matters to real people, not just investors.\n\nExample Style Response:\n\n“Ethereum’s been hovering near the 3K mark lately—mostly sideways. Could be a bit of hesitation in the market before the next Fed update.”\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2,
+      "position": [
+        -1460,
+        -220
+      ],
+      "id": "ba2fcf94-2f4a-41cc-ab8a-fb7d1721a679",
+      "name": "AI Agent",
+      "executeOnce": true,
+      "retryOnFail": true,
+      "maxTries": 2,
+      "notesInFlow": true
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {
+          "temperature": 0.4
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1560,
+        60
+      ],
+      "id": "2514f5f2-d9fe-4301-b34d-f7123b5a0983",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "EVvznX9tuDJXya3A",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -1400,
+        80
+      ],
+      "id": "32e54b5c-ae9c-4b5e-bdd7-9bd25ff0c2af",
+      "name": "Simple Memory"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Call this tool to get stock data from Alphavintage API ",
+        "url": "https://www.alphavantage.co/query",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "function",
+              "value": "GLOBAL_QUOTE"
+            },
+            {
+              "name": "symbol",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters1_Value', `This should be the ticker symbol for the user requested stock.`, 'string') }}"
+            },
+            {
+              "name": "apikey",
+              "value": "ZWDS9IIJ19XL0YJ4"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        -1100,
+        40
+      ],
+      "id": "28355a42-845e-4675-ad68-72048f65d66c",
+      "name": "AlphaVintage API tool"
+    },
+    {
+      "parameters": {
+        "toolDescription": "Call this tool to get info on cryptocurrency market trends , pricing , volume traded and other indicators on user query",
+        "url": "https://binance43.p.rapidapi.com/ticker/24hr",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "symbol",
+              "value": "={{ /*n8n-auto-generated-fromAI-override*/ $fromAI('parameters0_Value', `This is a ticker symbol for a particular crypto currency . For example - the symbol for etherium is ETHBTC `, 'string') }}"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "x-rapidapi-host",
+              "value": "binance43.p.rapidapi.com"
+            },
+            {
+              "name": "x-rapidapi-key",
+              "value": "8fa33dbe37mshd386672038ac4e5p111c38jsnb0188f7017aa"
+            }
+          ]
+        },
+        "options": {},
+        "optimizeResponse": true
+      },
+      "type": "n8n-nodes-base.httpRequestTool",
+      "typeVersion": 4.2,
+      "position": [
+        -1240,
+        80
+      ],
+      "id": "da3520de-193c-4af7-95a7-6f987f46f78d",
+      "name": "Binance API tool"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When chat message received": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        []
+      ]
+    },
+    "AlphaVintage API tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Binance API tool": {
+      "ai_tool": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "c4e55991-ece8-42b2-a12d-fd574bab8ee2",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cb69599758d38b4ec4469a6c119b9ed795ac9c3b58ab5f6b229dc1521a8f8b5b"
+  },
+  "id": "XeicZ3fA9SKKbcj6",
+  "tags": []
+}
