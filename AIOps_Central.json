@@ -1,0 +1,832 @@
+{
+  "name": "AIOps Central",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -2220,
+        1060
+      ],
+      "id": "6ca3db5c-e270-4a32-adf1-c4c1c706e7f0",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1560,
+        1060
+      ],
+      "id": "8416ea47-9250-43d3-82f6-4719048bb9fc",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "url": "http://127.0.0.1:3000/logs",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "count",
+              "value": "10"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "accept",
+              "value": "application/json"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -2000,
+        1060
+      ],
+      "id": "b51f7b36-350c-4106-ad13-016c6be148e3",
+      "name": "Datadog API request"
+    },
+    {
+      "parameters": {
+        "jsCode": "// For use with Loop Over Items node\n// This extracts each log as a separate item for the loop\n\nconst inputData = $input.all()[0]; // Get first item\nconst logs = inputData.json.logs || [];\n\n// Create an array where each log becomes a separate item\nconst outputItems = logs.map(log => ({\n  json: log\n}));\n\nreturn outputItems;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1780,
+        1060
+      ],
+      "id": "75390ee5-7033-44cc-ae7f-065a297c5355",
+      "name": "Parse output ",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "897b9f91-983f-4dcc-af85-7daecbfb5763",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "error",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1340,
+        260
+      ],
+      "id": "690630cd-9c04-4465-9247-af9cc507212c",
+      "name": "If status=error"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "99702fb1-19f7-47e1-86ea-07ec8803e385",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "warning",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -1042,
+        560
+      ],
+      "id": "e62daedc-dfd5-41d0-9026-b5f63ba21bc6",
+      "name": "if status==warning"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "bc86429c-41c4-4724-8094-b452135698ad",
+              "leftValue": "={{ $json.status }}",
+              "rightValue": "info",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -666,
+        910
+      ],
+      "id": "33da64b6-6c50-4375-aa12-d8bced73462d",
+      "name": "if status === info"
+    },
+    {
+      "parameters": {
+        "resource": "mail",
+        "fromEmail": "nilava93@gmail.com",
+        "fromName": "AIOps Central",
+        "toEmail": "nilavabiswas93@gmail.com",
+        "subject": "={{ $('Code').item.json.title }} - Severity - {{ $('Code').item.json.severity }}",
+        "contentValue": "=Hi ,\n\nIssue Description - {{ $('Code').item.json.description }}\nPriliminary Root Cause Analysis - {{ $('Code').item.json.rca }}\nRecommendations - {{ $('Code').item.json.recommendations.join(\",\") }}\n\nPlease reach out to {{ $('Code').item.json.team }} team . \n\nImpacted service - {{ $('Code').item.json.service }}\nSource - {{ $('Code').item.json.ddsource }} \nEnvironment - {{ $('Code').item.json.environment }} \nRegion - {{ $('Code').item.json.region }} \nSeverity - {{ $('Code').item.json.severity }}\n\nRegards , \nAIOps Team ",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        72,
+        485
+      ],
+      "id": "c1f9f72a-7342-4ecc-ae39-09c3941ad570",
+      "name": "SendGrid",
+      "credentials": {
+        "sendGridApi": {
+          "id": "v1DyC3wtHxFDzkvY",
+          "name": "SendGrid account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -1092,
+        80
+      ],
+      "id": "c322b77a-4348-4fad-8e1d-37ba76c2a7da",
+      "name": "Google Gemini Chat Model",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "EVvznX9tuDJXya3A",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsonSchemaExample": "{\n  \"title\":\"Payment system failed\",\n  \"severity\":\"P1\",\n  \"description\":\"Payment system failed . Multiple    users impacted.\",\n  \"rca\":\"api server failed\",\n  \"recommendations\":[\"restart server\"]\n}"
+      },
+      "type": "@n8n/n8n-nodes-langchain.outputParserStructured",
+      "typeVersion": 1.2,
+      "position": [
+        -972,
+        80
+      ],
+      "id": "7d5201eb-4dff-4bb4-bf69-4f935d22fbd1",
+      "name": "Structured Output Parser"
+    },
+    {
+      "parameters": {
+        "jsCode": "const parsedData = $input.all()[0].json;\n\nconst parsedDate = new Date($('If status=error').first().json.timestamp)\nparsedData.output = {\n  ...parsedData.output, // preserve existing output data\n  timestamp: parsedDate.toISOString(),\n  team:$('If status=error').first().json.context.team,\n  region:$('If status=error').first().json.context.region,\n  environment:$('If status=error').first().json.context.env,\n  service:$('If status=error').first().json.service,\n  ddsource:$('If status=error').first().json.ddsource\n};\n\nreturn parsedData.output "
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -666,
+        -140
+      ],
+      "id": "6346f992-bd50-4903-981f-bdc20d125f5d",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{$json}}",
+        "hasOutputParser": true,
+        "messages": {
+          "messageValues": [
+            {
+              "message": "=You are an AIOPs analyst. Analyze the Datadog JSON log from \n{{$json}} and provide:\nAnalysis Requirements:\n\n-Parse errors, performance metrics, service dependencies, and temporal patterns\nAssess user/business impact\n\n-Severity Classification:\n\n-P0 (Critical): Service down, data loss, security breach, widespread impact\n-P1 (High): Major functionality broken, significant performance issues\n-P2 (Medium): Partial functionality issues, moderate impact\n-P3 (Low): Minor issues, no immediate user impact\n\n-Output Format:\n\n-Issue Title & Severity (P0-P3 with justification)\n-Root Cause & Impact Assessment\n-Timeline & Affected Services\n-Immediate Actions & Prevention Steps\n-Key Metrics breached\n\nProvide structured, actionable insights for technical teams and stakeholders."
+            }
+          ]
+        },
+        "batching": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainLlm",
+      "typeVersion": 1.7,
+      "position": [
+        -1120,
+        -140
+      ],
+      "id": "17170a30-9eec-4841-8b8c-f5c960426f91",
+      "name": "Intelligence Node"
+    },
+    {
+      "parameters": {
+        "operation": "toJson",
+        "mode": "each",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -368,
+        -140
+      ],
+      "id": "b03e1937-380f-43e6-a154-535e644c74cf",
+      "name": "Convert to File"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "=C:\\Users\\ACER\\Downloads\\logs.json",
+        "options": {
+          "append": true
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -148,
+        -140
+      ],
+      "id": "2f4e5680-12b9-4d19-a20a-85f4a8d078a7",
+      "name": "Read/Write Files from Disk"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.chainSummarization",
+      "typeVersion": 2.1,
+      "position": [
+        -744,
+        460
+      ],
+      "id": "9d3373c7-3c18-47a2-95a0-df6892bff5b5",
+      "name": "Summarization Chain"
+    },
+    {
+      "parameters": {
+        "modelName": "models/gemini-2.0-flash",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini",
+      "typeVersion": 1,
+      "position": [
+        -656,
+        680
+      ],
+      "id": "b2473e8d-75c5-4e81-aeca-591bbf65494d",
+      "name": "Google Gemini Chat Model1",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "EVvznX9tuDJXya3A",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "command": "echo \"restart payment service\""
+      },
+      "type": "n8n-nodes-base.executeCommand",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        60
+      ],
+      "id": "eaa45ba8-2e0e-4da8-af2b-9884196ca793",
+      "name": "Execute Command"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "60b4bc33-7f47-40e1-bd41-e911d6a90928",
+              "leftValue": "={{ $json.service }}",
+              "rightValue": "payment-service",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            },
+            {
+              "id": "3ac05b71-a98a-490f-94ba-cfe66f481455",
+              "leftValue": "={{ $json.context.env }}",
+              "rightValue": "prod",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        -666,
+        160
+      ],
+      "id": "fca9dd2b-f16e-4156-9838-6a0d0370f22c",
+      "name": "If"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        260
+      ],
+      "id": "4562e36c-04fc-40ec-a402-c2bbd8d7b2ea",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "resource": "mail",
+        "fromEmail": "nilava93@gmail.com",
+        "fromName": "AIOps Central",
+        "toEmail": "nilavabiswas93@gmail.com",
+        "subject": "=Warning -  {{ $('if status==warning').item.json.service }} - P4",
+        "contentValue": "=Hi,\n\nLooks like {{ $json.output.text }}.\nPlease review {{ $('if status==warning').item.json.service }} and contact {{ $('if status==warning').item.json.context.team }} team for quick remediation . \n\nRegion - {{ $('if status==warning').item.json.context.region }}\nPriority - {{ $('if status==warning').item.json.attributes.priority }}\n\n\nRegards,\nAIOps Team",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        -368,
+        660
+      ],
+      "id": "eef26870-95c0-4eed-9073-712f4520325c",
+      "name": "SendGrid1",
+      "credentials": {
+        "sendGridApi": {
+          "id": "v1DyC3wtHxFDzkvY",
+          "name": "SendGrid account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toJson",
+        "options": {
+          "format": true
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -368,
+        460
+      ],
+      "id": "a8467a8d-91ee-46de-8afc-76b8a57ab131",
+      "name": "Convert to File1"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "C:\\Users\\ACER\\Downloads\\warning.json",
+        "options": {
+          "append": true
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -148,
+        460
+      ],
+      "id": "7f238aea-452d-4f6b-b449-6f8fbc82a0ae",
+      "name": "Read/Write Files from Disk1"
+    },
+    {
+      "parameters": {
+        "options": {
+          "delimiter": ","
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -368,
+        910
+      ],
+      "id": "30b57b2d-0865-4866-af26-e7a40039452b",
+      "name": "Convert to File2"
+    },
+    {
+      "parameters": {
+        "operation": "write",
+        "fileName": "C:\\Users\\ACER\\Downloads\\info.csv",
+        "options": {
+          "append": true
+        }
+      },
+      "type": "n8n-nodes-base.readWriteFile",
+      "typeVersion": 1,
+      "position": [
+        -148,
+        910
+      ],
+      "id": "3cf376e3-f2ff-4315-b0b2-b33e99f745ac",
+      "name": "Read/Write Files from Disk2"
+    },
+    {
+      "parameters": {
+        "resource": "mail",
+        "fromEmail": "nilava93@gmail.com",
+        "fromName": "AIOps Central",
+        "toEmail": "nilavabiswas93@gmail.com",
+        "subject": "Scheduled AIOps run is successful",
+        "contentValue": "Hi , \n\nScheduled AIOps execution is successful . \nPlease reach out to AIOps team for any queries. \n\nRegards,\nAIOps Team",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.sendGrid",
+      "typeVersion": 1,
+      "position": [
+        -1340,
+        910
+      ],
+      "id": "438d9cc8-d33c-4186-a39e-0de44f3838a9",
+      "name": "SendGrid2",
+      "credentials": {
+        "sendGridApi": {
+          "id": "v1DyC3wtHxFDzkvY",
+          "name": "SendGrid account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Datadog API request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [
+          {
+            "node": "SendGrid2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If status=error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Datadog API request": {
+      "main": [
+        [
+          {
+            "node": "Parse output ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse output ": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If status=error": {
+      "main": [
+        [
+          {
+            "node": "Intelligence Node",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "if status==warning",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if status==warning": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Summarization Chain",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "if status === info",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Gemini Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Intelligence Node",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Structured Output Parser": {
+      "ai_outputParser": [
+        [
+          {
+            "node": "Intelligence Node",
+            "type": "ai_outputParser",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Intelligence Node": {
+      "main": [
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk": {
+      "main": [
+        [
+          {
+            "node": "SendGrid",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SendGrid": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "if status === info": {
+      "main": [
+        [
+          {
+            "node": "Convert to File2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Google Gemini Chat Model1": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Summarization Chain",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Summarization Chain": {
+      "main": [
+        [
+          {
+            "node": "SendGrid1",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Convert to File1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Execute Command",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Command": {
+      "main": [
+        []
+      ]
+    },
+    "SendGrid1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File1": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk1": {
+      "main": [
+        []
+      ]
+    },
+    "Convert to File2": {
+      "main": [
+        [
+          {
+            "node": "Read/Write Files from Disk2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read/Write Files from Disk2": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2bad4675-e766-4378-9ca7-97014a7aaf00",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cb69599758d38b4ec4469a6c119b9ed795ac9c3b58ab5f6b229dc1521a8f8b5b"
+  },
+  "id": "ONOoSkMjq9LCiYPa",
+  "tags": [
+    {
+      "name": "aiops",
+      "id": "wrgmSXk7PlGZ3F35",
+      "createdAt": "2025-06-17T09:00:51.081Z",
+      "updatedAt": "2025-06-17T09:00:51.081Z"
+    },
+    {
+      "name": "workflow",
+      "id": "KrmoWBUhlkUck2t3",
+      "createdAt": "2025-06-17T09:00:55.972Z",
+      "updatedAt": "2025-06-17T09:00:55.972Z"
+    },
+    {
+      "name": "n8n",
+      "id": "pNnnvGscfQLp0Nxx",
+      "createdAt": "2025-06-17T09:00:58.160Z",
+      "updatedAt": "2025-06-17T09:00:58.160Z"
+    }
+  ]
+}
